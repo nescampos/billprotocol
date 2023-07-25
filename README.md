@@ -5,7 +5,7 @@ Bill Protocol is a web platform that allows you to manage invoices and payments 
 _Bill Protocol currently operates on the XRPL testnet._
 
 ### Demo
-https://www.youtube.com/watch?v=gAN1A21-NfI 
+https://www.youtube.com/watch?v=9nUfC-fxP2I
 
 ## Options
 
