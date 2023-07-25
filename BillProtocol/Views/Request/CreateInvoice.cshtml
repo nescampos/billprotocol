@@ -1,0 +1,185 @@
+﻿@model BillProtocol.Models.RequestModel.CreateInvoiceViewModel
+@{
+    ViewData["Title"] = "Create new invoice";
+}
+
+
+@section HeaderSection 
+{
+    <div class="header-title">
+        <span class="h3">@ViewData["Title"]</span>
+    </div> 
+    
+}
+
+<br /><br />
+
+@if(Model.UserInfo == null)
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                Update personal/company information to be able to create invoices.
+            </div>
+        </div>
+    </div>
+}
+
+@using(Html.BeginForm())
+{
+    <div class="row">
+        <div class="col-3">
+            Invoice number
+        </div>
+        <div class="col-5">
+            <b>@Model.InvoiceNumber</b>
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            Invoice type
+        </div>
+        <div class="col-5">
+            @Html.DropDownListFor(x => x.Form.InvoiceTypeId, Model.InvoiceTypes, "Select the type",new {@class="form-control"}) <br />
+            @Html.ValidationMessageFor(x => x.Form.InvoiceTypeId)
+        </div>
+        <div class="col-4">
+            <div class="alert alert-success" role="alert">
+                Select the invoice type: <br />
+                - Regular invoice: A normal invoice that the recipient can pay at any time. <br />
+                - Payment To Date: The receiver generates a check associated with his/her account and that you can redeem when the payment date is executed (to cash from his/her account).<br />
+                - Escrow: The receiver deposits the money in an escrow and you can redeem it when the payment date arrives.
+            </div>
+            
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            Client (destination)
+        </div>
+        <div class="col-5">
+            @Html.DropDownListFor(x => x.Form.DestinationId, Model.Destinations, "Select your destination/client",new {@class="form-control"}) <br />
+            @Html.ValidationMessageFor(x => x.Form.DestinationId)
+        </div>
+        <div class="col-4">
+            <div class="alert alert-success" role="alert">
+                Select the destination for this new invoice.
+            </div>
+            
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            Wallet
+        </div>
+        <div class="col-5">
+            @Html.DropDownListFor(x => x.Form.WalletId, Model.Wallets, "Select your wallet",new {@class="form-control"}) <br />
+            @Html.ValidationMessageFor(x => x.Form.WalletId)
+        </div>
+        <div class="col-4">
+            <div class="alert alert-success" role="alert">
+                Select the wallet where you want to receive the money.
+            </div>
+            
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            Currency
+        </div>
+        <div class="col-5">
+            @Html.DropDownListFor(x => x.Form.CurrencyId, Model.Currencies, "Select the currency for this invoice",new {@class="form-control"}) <br />
+            @Html.ValidationMessageFor(x => x.Form.CurrencyId)
+        </div>
+        <div class="col-4">
+            <div class="alert alert-success" role="alert">
+                Select the type of currency for this invoice and its transaction.
+            </div>
+            
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            Payment date
+        </div>
+        <div class="col-5">
+            @Html.TextBoxFor(x => x.Form.PaymentDate, new {@class="form-control", type="date"}) <br />
+            @Html.ValidationMessageFor(x => x.Form.CurrencyId)
+        </div>
+        <div class="col-4">
+             <div class="alert alert-success" role="alert">
+                Enter the date for the payment to be made by the recipient of this invoice.
+            </div>
+            
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-12">
+            <h4>Items</h4>
+            @Html.ValidationMessageFor(x => x.Form.Details) <br />
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Discount</th>
+                        <th>Tax (%)</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for(int i = 0; i < 10; i++)
+                    {
+                        <tr>
+                            <td><input type="text" class="form-control" name="Form.Details[@i].Description" /></td>
+                            <td><input type="number" class="form-control" name="Form.Details[@i].Quantity" id="Quantity_@i" onchange="updateTotal(@i);" /></td>
+                            <td><input type="number" class="form-control" name="Form.Details[@i].UnitPrice" id="UnitPrice_@i" onchange="updateTotal(@i);" /></td>
+                            <td><input type="number" class="form-control" name="Form.Details[@i].Discount" id="Discount_@i" onchange="updateTotal(@i);" /></td>
+                            <td><input type="number" class="form-control" name="Form.Details[@i].Tax" id="Tax_@i" onchange="updateTotal(@i);" /></td>
+                            <th><span class="totalToSum total_@i"></span></th>
+                        </tr>
+                    }
+                    <tr>
+                        <td colspan="5"></td>
+                        <td><span class="totalinvoice"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            Memo
+        </div>
+        <div class="col-5">
+            @Html.TextAreaFor(x => x.Form.Memo, new {@class="form-control", type="date"}) <br />
+            @Html.ValidationMessageFor(x => x.Form.Memo)
+        </div>
+        <div class="col-4">
+            <div class="alert alert-success" role="alert">
+                You can enter a memo or information for the recipient of this invoice.
+            </div>
+            
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-6">
+           <br />
+        </div>
+        <div class="col-4">
+            <input type="submit" value="Create invoice" class="btn-primary btn" @(Model.UserInfo == null? "disabled=\"disabled\"" : "") />
+        </div>
+    </div>
+    <br /><br /><br />
+
+}

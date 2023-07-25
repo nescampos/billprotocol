@@ -1,0 +1,107 @@
+﻿@model BillProtocol.Models.RequestModel.IndexRequestViewModel
+@{
+    ViewData["Title"] = "My Invoices";
+}
+
+@section HeaderSection 
+{
+    <div class="header-title">
+        <span class="h3">@ViewData["Title"]</span>
+    </div> 
+    
+}
+
+<br />
+
+<div class="row">
+    <div class="col-12">
+        @Html.ActionLink("Create invoice","CreateInvoice","Request",null,new {@class="btn btn-info"})
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        @using (Html.BeginForm(null, null, FormMethod.Get))
+        {
+            <div class="row">
+                <div class="col-md-3">
+                   Start date: @Html.TextBoxFor(x => x.Form.startDate, new {@class="form-control", type="date"})
+                 
+                </div>
+                <div class="col-md-3">
+                    End Date: @Html.TextBoxFor(x => x.Form.endDate, new {@class="form-control", type="date"})
+                </div>
+                <div class="col-md-3">
+                    Type: @Html.DropDownList("Form.invoiceType", Model.Types, "Select a type", new { @class = "form-control" })
+                </div>
+                <div class="col-md-3">
+                    Currency: @Html.DropDownList("Form.currency", Model.Currencies, "Select a currency", new { @class = "form-control" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-4">
+                    Wallet:@Html.DropDownList("Form.wallet", Model.Wallets, "Select a wallet", new { @class = "form-control" })
+                </div>
+                <div class="col-md-4">
+                    Status: @Html.DropDownList("Form.status", Model.Status, "Select a status", new { @class = "form-control" })
+                </div>
+                <div class="col-md-4">
+                    <br />
+                    <input type="submit" value="Filter" class="btn btn-secondary" />
+                </div>
+            </div>
+        }
+    </div>
+            
+
+    </div>
+<br /><br />
+
+<div class="row">
+    <div class="col-12">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Creation date</th>
+                    <th>Type</th>
+                    <th>Payment date</th>
+                    <th>Total amount (currency)</th>
+                    <th>Destination</th>
+                    <th>Wallet</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(Model.Invoices.Any())
+                {
+                    foreach(var invoice in Model.Invoices)
+                    {
+                        <tr>
+                            <td>@invoice.CreatedAt</td>
+                            <td>@invoice.InvoiceType.Name</td>
+                            <td>@invoice.PaymentDate.ToShortDateString()</td>
+                            <td>@invoice.TotalAmount (@invoice.Currency.Code)</td>
+                            <td>@invoice.Destination.Name</td>
+                            <td>@invoice.Wallet.Name</td>
+                            @{
+                                var badgeClass = invoice.InvoiceStatus.Id == Constants.PayedInvoiceStatus ? "badge-success" : (invoice.InvoiceStatus.Id == Constants.RejectedInvoiceStatus? "badge-danger":"badge-primary"); 
+                            }
+                            <td><span class="badge @badgeClass">@invoice.InvoiceStatus.Name</span></td>
+                            <td>@Html.ActionLink("View", "Detail","Request",new {id = invoice.Id}, new {@class="btn btn-secondary"})</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">You have no invoices created.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        
+    </div>
+</div>

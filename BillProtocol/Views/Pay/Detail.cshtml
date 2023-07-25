@@ -1,0 +1,321 @@
+﻿@model BillProtocol.Models.PayModel.DetailsPayViewModel
+@{
+    ViewData["Title"] = "Invoice details";
+}
+
+@section HeaderSection 
+{
+    <div class="header-title">
+        <span class="h3">@ViewData["Title"]</span>
+    </div> 
+    
+}
+
+<br /><br />
+
+<div class="row">
+    <div class="col-12">
+        <h2>Invoice details</h2>
+    </div>
+</div>
+
+<br />
+
+    <div class="row">
+        <div class="col-3">
+            <h5>Invoice number</h5>
+        </div>
+        <div class="col-5">
+            <b>@Model.Invoice.InvoiceNumber</b>
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            <h5>Invoice type</h5>
+        </div>
+        <div class="col-5">
+            @Model.Invoice.InvoiceType.Name
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            <h5>Wallet to pay</h5>
+        </div>
+        <div class="col-5">
+            @Model.Invoice.Wallet.Address
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            <h5>Currency</h5>
+        </div>
+        <div class="col-5">
+            @Model.Invoice.Currency.Name (@Model.Invoice.Currency.Code)
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            <h5>Payment date</h5>
+        </div>
+        <div class="col-5">
+            @Model.Invoice.PaymentDate.ToShortDateString()
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-12">
+            <h4>Items</h4>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Discount</th>
+                        <th>Tax</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.Description</td>
+                            <td>@item.Quantity</td>
+                            <td> @(item.UnitPrice.GetValueOrDefault().ToString()) @Model.Invoice.Currency.Code</td>
+                            <td>@(item.Discount.HasValue? item.Discount.Value.ToString()+" "+Model.Invoice.Currency.Code: "-") </td>
+                            <td>@(item.Tax.HasValue? item.Tax.Value.ToString()+"%": "-")</td>
+                            <td> @item.TotalAmount.GetValueOrDefault().ToString() @Model.Invoice.Currency.Code</td>
+                        </tr>
+                    }
+                    <tr>
+                        <th colspan="5">Total</th>
+                        <th> @Model.Invoice.TotalAmount.GetValueOrDefault().ToString() @Model.Invoice.Currency.Code</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-3">
+            <span class="h4">Memo</span>
+        </div>
+        <div class="col-5">
+            @Model.Invoice.Memo
+        </div>
+    </div>
+    <br />
+
+    @if(Model.Invoice.InvoiceStatusId == Constants.CreatedInvoiceStatus && Model.Invoice.InvoiceTypeId == Constants.RegularInvoice)
+    {
+        @using(Html.BeginForm("ApproveReject","Pay"))
+        {
+            <h4>Approve the payment</h4>
+            <div class="row">
+                    
+                <div class="col-5">
+                    
+                    <input type="hidden" value="@Model.Invoice.Id" name="idInvoice" />
+                    Comments: <br />
+                    <input type="text" name="comments" class="form-control" />
+                </div>
+                <div class="col-6">
+                    <input type="submit" value="Approve" name="approveButton" class="btn btn-success" />  <br /> <br />
+                    <input type="submit" value="Reject" name="rejectButton" class="btn btn-danger" /> 
+                </div>
+            </div>
+        } 
+    }
+   
+    @if(Model.Invoice.InvoiceStatusId == Constants.CreatedInvoiceStatus && Model.Invoice.InvoiceTypeId == Constants.EscrowInvoice)
+    {
+        @using(Html.BeginForm("ApproveRejectPaymentInvoice","Pay", FormMethod.Post, new { id="deferredPaymentForm" }))
+        {
+            <h4>Approve the payment</h4>
+            <div class="row">
+                
+                 <div class="col-5">
+                     
+                    <input type="hidden" name="successfulPayment" id="successfulPayment"/>
+                    <input type="hidden" name="checkId" id="checkId" />
+                    <input type="hidden" name="ledgerSequence" id="ledgerSequence" />
+                    <input type="hidden" value="@Model.Invoice.Id" name="idInvoice" id="idInvoice" />
+                    Seed code (XRPL wallet): <input type="password" name="seedCode" id="seedCode" class="form-control" />
+                </div>
+                <div class="col-4">
+                    Comments: <br />
+                    <input type="text" name="comments" class="form-control" />
+                </div>
+                <div class="col-2">
+                    <input type="submit" value="Approve" name="approveButton" class="btn btn-success approveEscrowBtn" />  <br /> <br />
+                    <input type="submit" value="Reject" name="rejectButton" class="btn btn-danger rejectEscrowBtn" /> 
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-5 alert alert-danger errorWallet" style="display:none;">
+                    Please, enter the seed code to generate the escrow (your seed code is not saved by us).
+                </div>
+                <div class="col-5 alert alert-danger errorPayment" style="display:none;">
+                    Error when making the escrow, check your wallet and try again.
+                </div>
+                <div class="col-5 alert alert-success successPayment" style="display:none;">
+                    The invoice was approved and the escrow was made successfully.
+                </div>
+                <div class="col-5 alert alert-info waitingPayment" style="display:none;">
+                    The invoice is being approved.
+                </div>
+            </div>
+        } 
+    }
+
+    @if(Model.Invoice.InvoiceStatusId == Constants.CreatedInvoiceStatus && Model.Invoice.InvoiceTypeId == Constants.PaymentToDateInvoice)
+    {
+        @using(Html.BeginForm("ApproveRejectPaymentInvoice","Pay", FormMethod.Post, new { id="deferredPaymentForm" }))
+        {
+            <h4>Approve the payment</h4>
+            <div class="row">
+                 <div class="col-5">
+                     
+                    <input type="hidden" name="successfulPayment" id="successfulPayment"/>
+                    <input type="hidden" name="checkId" id="checkId" />
+                    <input type="hidden" value="@Model.Invoice.Id" name="idInvoice" id="idInvoice" />
+                    Seed code (XRPL wallet): <input type="password" name="seedCode" id="seedCode" class="form-control" />
+                </div>
+                <div class="col-4">
+                    Comments: <br />
+                    <input type="text" name="comments" class="form-control" />
+                </div>
+                <div class="col-2">
+                    <input type="submit" value="Approve" name="approveButton" class="btn btn-success approveCheckBtn" /> <br /> <br />
+                    <input type="submit" value="Reject" name="rejectButton" class="btn btn-danger rejectCheckBtn" /> 
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-5 alert alert-danger errorWallet" style="display:none;">
+                    Please, enter the seed code to generate the check (your seed code is not saved by us).
+                </div>
+                <div class="col-5 alert alert-danger errorPayment" style="display:none;">
+                    Error when making the check, check your wallet and try again.
+                </div>
+                <div class="col-5 alert alert-success successPayment" style="display:none;">
+                    The check was made and sent successfully.
+                </div>
+                <div class="col-5 alert alert-info waitingPayment" style="display:none;">
+                    The invoice is being approved.
+                </div>
+            </div>
+        } 
+    }
+     <br />
+    @if(Model.Invoice.InvoiceStatusId == Constants.ApprovedInvoiceStatus && Model.Invoice.InvoiceTypeId == Constants.RegularInvoice)
+    {
+        @using(Html.BeginForm("PayRegularInvoice","Pay",FormMethod.Post,new {id="regularInvoiceForm"}))
+        {
+            <h4>Make the payment</h4>
+            <div class="row">
+                  
+                <div class="col-5">
+                    
+                    <input type="hidden" name="successfulPayment" id="successfulPayment"/>
+                    @*<input type="hidden" name="txId" id="txId" />*@
+                    <input type="hidden" value="@Model.Invoice.Id" name="idInvoice" id="idInvoice" />
+                    Seed code (XRPL wallet): <input type="password" name="seedCode" id="seedCode" class="form-control" />
+                </div>
+                <div class="col-6">
+                    <input type="button" value="Pay" id="payInvoiceXRPL" class="btn btn-success btnPay" /> <br />
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-5 alert alert-danger errorWallet" style="display:none;">
+                    Please, enter the seed code to send the payment (your seed code is not saved by us).
+                </div>
+                <div class="col-5 alert alert-danger errorPayment" style="display:none;">
+                    Error when making the payment, check your wallet and check if you have the money for it.
+                </div>
+                <div class="col-5 alert alert-success successPayment" style="display:none;">
+                    The payment was made successfully.
+                </div>
+                <div class="col-5 alert alert-info waitingPayment" style="display:none;">
+                    The payment is being executed.
+                </div>
+            </div>
+        } 
+    }
+     <br />
+    @if(Model.Invoice.InvoiceStatusId == Constants.RejectedInvoiceStatus)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-danger">
+                    This invoice was rejected by you.
+                </div>
+            </div>
+        </div>
+    }
+
+    @if(Model.Invoice.InvoiceStatusId == Constants.ApprovedInvoiceStatus && Model.Invoice.InvoiceTypeId == Constants.PaymentToDateInvoice)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-success">
+                    A check has been created for this invoice and the issuer of this invoice will be able to cash it on the corresponding date. Make sure you have a balance in your XRPL account on that date so that the payment ends correctly.
+                </div>
+            </div>
+        </div>
+    }
+
+    @if(Model.Invoice.InvoiceStatusId == Constants.ApprovedInvoiceStatus && Model.Invoice.InvoiceTypeId == Constants.EscrowInvoice)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-success">
+                    Payment is in escrow and may be redeemed by the recipient (creator of this invoice) after the payment date.
+                </div>
+            </div>
+        </div>
+    }
+
+    @if(Model.Invoice.InvoiceStatusId == Constants.PayedInvoiceStatus)
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-success">
+                    This invoice was payed by you.
+                </div>
+            </div>
+        </div>
+    }
+
+     <br />
+
+@section Scripts
+{
+    <script src="https://unpkg.com/xrpl@2.0.0/build/xrpl-latest-min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $('#payInvoiceXRPL').click(async function () {
+                var seedCode = $('#seedCode').val();
+                await sendXRPLPayment(seedCode,'@Model.Invoice.Currency.Code','@(Model.Invoice.TotalAmount.Value.ToString("N2").Replace(",","."))','@Model.Invoice.Wallet.Address')
+                
+            });
+            $('.approveCheckBtn').click(async function () {
+                var seedCode = $('#seedCode').val();
+                await sendDeferredPayment(seedCode,'@Model.Invoice.Currency.Code',@(Model.Invoice.TotalAmount.Value.ToString("N2").Replace(",",".")),'@Model.Invoice.Wallet.Address')
+            });
+            $('.approveEscrowBtn').click(async function () {
+                var seedCode = $('#seedCode').val();
+                await createEscrow(seedCode,@(Model.Invoice.TotalAmount.Value.ToString("N2").Replace(",",".")),'@Model.Invoice.Wallet.Address', @Model.UnixDateTimeFinish)
+            });
+        });
+    </script>
+    
+}
